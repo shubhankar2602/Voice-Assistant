@@ -1,0 +1,89 @@
+import pyttsx3
+import datetime
+import speech_recognition as sr
+import wikipedia
+import pyfirmata
+
+
+
+
+comport='COM3'
+
+board=pyfirmata.Arduino(comport)
+
+led1=board.get_pin('d:8:o')
+
+
+
+def led_switch(val):
+    if val==1:
+        led1.write(1)
+    elif val==0:
+        led1.write(0)
+
+
+
+
+
+engine = pyttsx3.init('sapi5')
+voices=engine.getProperty("voices")
+# print(voices[0].id)
+engine.setProperty('voice', voices[0].id)
+newVoiceRate = 145
+engine.setProperty('rate',newVoiceRate)
+
+def speak(audio):
+    engine.say(audio)
+    engine.runAndWait()
+
+def wishMe():
+    hour=int(datetime.datetime.now().hour)
+    if hour>=0 and hour<12:
+        speak('Good morning')
+    elif hour>12 and hour<18:
+        speak('Good afternoon')
+    else:
+        speak('Good evening')
+    speak('I am Friday sir. please tell me how may I help you')
+
+
+def take_command():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        r.pause_threshold = 1
+        audio = r.listen(source)
+
+    try:
+        print("Recognizing...")    
+        query = r.recognize_google(audio, language='en-in')
+        print(f"User said: {query}\n")
+
+    except Exception as e:
+        # print(e)    
+        print("Say that again please...")  
+        return "None"
+    return query
+
+if __name__ =='__main__':
+    # speak('Good afternoon')
+    wishMe()
+    while True:
+        query=take_command().lower()
+
+        if 'wikipedia' in query:
+            speak('searching wikipedia...')
+            query=query.replace("wikipedia","")
+            results=wikipedia.summary(query,sentences=2)
+            speak('According to wikipedia')
+            speak(results)
+        elif 'light on' in query:
+            print('light on......')
+            speak('light on........')
+            led_switch(1)
+        elif 'light off' in query:
+            print('light off......')
+            speak('light off........')
+            led_switch(0)
+        elif 'exit' in query:
+            break
